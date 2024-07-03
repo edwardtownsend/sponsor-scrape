@@ -4,10 +4,13 @@ import pandas as pd
 import os
 import re
 
-with open("cued_choice.html", "r", encoding="utf-8") as html_file:
-    cued_html = html_file.read()
+filename = "cued_choice.html"
 
-def company_parser(html_content, plain_texts):
+with open(filename, "r", encoding="utf-8") as file:
+    raw_html = file.read()
+
+def html_parser(html_content):
+    company_info_list = []
     soup = BeautifulSoup(html_content, 'html.parser')
     target_attrs = {
         "target": "_blank"
@@ -41,7 +44,9 @@ def company_parser(html_content, plain_texts):
             if len(phone_number) < 4:
                 phone_number = None
 
-        plain_texts.append([company_name, person_name_tag, email_address, phone_number])
+        company_info_list.append([company_name, person_name_tag, email_address, phone_number])
+
+    return company_info_list
 
 def remove_strings_with_same_start(lst_of_lsts):
     processed_words = set()
@@ -60,37 +65,37 @@ def remove_strings_with_same_start(lst_of_lsts):
 def read_from_excel(file_name):
     return pd.read_excel(file_name, header=None).fillna('').values.tolist()
 
-sponsor_list = []
-company_parser(cued_html, sponsor_list)
-sponsor_list += read_from_excel("2021_company_list.xlsx")
-sponsor_list += read_from_excel("old_sponsor_list.xlsx")
-
-sponsor_list = remove_strings_with_same_start(sponsor_list)
-print(len(sponsor_list))
-
-company_name_email = []
-company_email = []
-company = []
-
-for lst in sponsor_list:
-    if lst[2] != None:
-        if lst[1] != "":
-            company_name_email.append(lst)
-        else:
-            company_email.append(lst)
-    else:
-        company.append(lst)
-
-
 def save_to_excel(data, file_name, dir_path):
     xlsx_path = os.path.join(dir_path, file_name)
     df = pd.DataFrame(data)
     df.to_excel(xlsx_path, index=False, header=False)
 
+
+company_info_list = html_parser(raw_html)
+company_info_list += read_from_excel("2021_company_list.xlsx")
+company_info_list += read_from_excel("old_sponsor_list.xlsx")
+company_info_list = remove_strings_with_same_start(company_info_list)
+
+company_name_email = []
+company_email = []
+company = []
+
+for lst in company_info_list
+    # If email is present
+    if lst[2] != None:
+        if lst[1] != "":
+            # If name is also present
+            company_name_email.append(lst)
+        else:
+            company_email.append(lst)
+    # Store all companies with no email and with/without name in company list
+    else:
+        company.append(lst)
+
 dir_path = os.getcwd()
 save_to_excel(company_email, "companies_emails.xlsx", dir_path)
 save_to_excel(company_name_email, "companies_names_emails.xlsx", dir_path)
 
-print(len(f"Number of companies with neither contact name or email: {company}"))
+print(len(f"Number of companies with no email: {company}"))
 print(len(f"Number of companies with only email: {company_email}"))
 print(len(f"Number of companies with contact name and email: {company_name_email}"))
