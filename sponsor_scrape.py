@@ -4,10 +4,13 @@ import pandas as pd
 import os
 import re
 
-filename = "cued_choice.html"
+filename_23 = "data/2023/cued_choice_2023.html"
+filename_24 = "data/2024/cued_choice_2024.html"
 
-with open(filename, "r", encoding="utf-8") as file:
-    raw_html = file.read()
+with open(filename_23, "r", encoding="utf-8") as file:
+    raw_html_23 = file.read()
+with open(filename_24, "r", encoding="utf-8") as file:
+    raw_html_24 = file.read()
 
 def html_parser(html_content):
     company_info_list = []
@@ -48,7 +51,7 @@ def html_parser(html_content):
 
     return company_info_list
 
-def remove_strings_with_same_start(lst_of_lsts):
+def remove_duplicate_companies(lst_of_lsts):
     processed_words = set()
     result = []
 
@@ -62,6 +65,7 @@ def remove_strings_with_same_start(lst_of_lsts):
 
     return result
 
+# Read other databases that are excel files into list of lists
 def read_from_excel(file_name):
     return pd.read_excel(file_name, header=None).fillna('').values.tolist()
 
@@ -70,32 +74,24 @@ def save_to_excel(data, file_name, dir_path):
     df = pd.DataFrame(data)
     df.to_excel(xlsx_path, index=False, header=False)
 
+# Create global list of company information
+company_info_list = html_parser(raw_html_23)
+company_info_list = html_parser(raw_html_24)
+company_info_list += read_from_excel("data/other_databases/2021_company_list.xlsx")
+company_info_list += read_from_excel("data/other_databases/old_sponsor_team_list.xlsx")
+company_info_list += read_from_excel("data/other_databases/events_team_list.xlsx")
 
-company_info_list = html_parser(raw_html)
-company_info_list += read_from_excel("2021_company_list.xlsx")
-company_info_list += read_from_excel("old_sponsor_list.xlsx")
-company_info_list = remove_strings_with_same_start(company_info_list)
+# Remove companies with no email address
+edited_company_info_list = []
 
-company_name_email = []
-company_email = []
-company = []
+for lst in company_info_list:
+    # If email is present and not empty
+    if lst[2] is not None and lst[2] != "":
+        edited_company_info_list.append(lst)
 
-for lst in company_info_list
-    # If email is present
-    if lst[2] != None:
-        if lst[1] != "":
-            # If name is also present
-            company_name_email.append(lst)
-        else:
-            company_email.append(lst)
-    # Store all companies with no email and with/without name in company list
-    else:
-        company.append(lst)
+# Remove duplicate companies
+final_company_info_list = remove_duplicate_companies(edited_company_info_list)
 
 dir_path = os.getcwd()
-save_to_excel(company_email, "companies_emails.xlsx", dir_path)
-save_to_excel(company_name_email, "companies_names_emails.xlsx", dir_path)
-
-print(len(f"Number of companies with no email: {company}"))
-print(len(f"Number of companies with only email: {company_email}"))
-print(len(f"Number of companies with contact name and email: {company_name_email}"))
+save_to_excel(final_company_info_list, "company_info_database_2024.xlsx", dir_path)
+print(f"Number of companies found: {len(final_company_info_list)}")
